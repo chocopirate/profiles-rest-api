@@ -1,33 +1,32 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
 Vagrant.configure("2") do |config|
- # The most common configuration options are documented and commented below.
- # For a complete reference, please see the online documentation at
- # https://docs.vagrantup.com.
+    config.vm.box = "ubuntu/bionic64"
+    config.ssh.insert_key = false
+    config.vbguest.auto_update = false
+#    config.vm.box_version = "~> 20200304.0.0"
+    config.vm.network "forwarded_port", guest: 9999, host: 9999, auto_correct: true
+# config.vm.provider "virtualbox" do |vb|
+#     config.vm.network "private_network", :type => 'dhcp', :adapter => 3
+# end
+    config.vm.network :public_network, :bridge => 'en1: Wi-Fi (AirPort)'
+    config.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--uart1", "0x3F8", "4"]
+        vb.customize ["modifyvm", :id, "--uartmode1", "file", File::NULL]
+#         vb.name = "profiles_rest_api_host"
+    end
 
- # Every Vagrant development environment requires a box. You can search for
- # boxes at https://vagrantcloud.com/search.
- config.vm.box = "ubuntu/bionic64"
- config.vm.box_version = "~> 20200304.0.0"
+    config.vm.provision "shell", inline: <<-SHELL
+        systemctl disable apt-daily.service
+        systemctl disable apt-daily.timer
 
- config.vm.network "forwarded_port", guest: 8765, host: 8765, auto_correct: true
- # config.vm.network "public_network"
-
- config.vm.provision "shell", inline: <<-SHELL
-   systemctl disable apt-daily.service
-   systemctl disable apt-daily.timer
-
-   sudo apt-get update
-   sudo apt-get install -y python3-venv zip
-   touch /home/vagrant/.bash_aliases
-   if ! grep -q PYTHON_ALIAS_ADDED /home/vagrant/.bash_aliases; then
-     echo "# PYTHON_ALIAS_ADDED" >> /home/vagrant/.bash_aliases
-     echo "alias python='python3'" >> /home/vagrant/.bash_aliases
-   fi
- SHELL
+        sudo apt-get update
+        sudo apt-get install -y python3-venv zip
+        touch /home/vagrant/.bash_aliases
+        if ! grep -q PYTHON_ALIAS_ADDED /home/vagrant/.bash_aliases; then
+            echo "# PYTHON_ALIAS_ADDED" >> /home/vagrant/.bash_aliases
+            echo "alias python='python3'" >> /home/vagrant/.bash_aliases
+        fi
+    SHELL
 end
